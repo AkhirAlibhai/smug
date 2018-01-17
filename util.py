@@ -17,7 +17,8 @@ def markdownCodeBlock(text: str, language: str=''):
     ''' formats text as a markdown code block '''
     return f'```{language}\n' + text + '```'
 
-NdN = re.compile(r'\d+d\d+')
+rollPattern = re.compile('([\d]+[d]{1}[\d]+)(\s*[+]\s*[\d]+[d]{1}[\d]+)*')
+rollSplitPattern = re.compile('\s*\+\s*')
 
 basePath = os.path.dirname(os.path.realpath(__file__))
 

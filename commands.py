@@ -46,14 +46,22 @@ class Commands():
         await self.bot.say(util.markdownCodeBlock(Figlet().renderText(message)))
 
     @commands.command()
-    async def roll(self, dice: str='1d6'):
-        ''' Rolls dice using NdN format '''
-        if (re.fullmatch(util.NdN, dice) is None):
-            await self.bot.say('Error: Format must be NdN')
+    async def roll(self, *, dice: str='1d6'):
+        '''
+        Rolls dice using NdN format
+        Allows for multiple dice rolls using + as a seperator
+        '''
+        if (re.fullmatch(util.rollPattern, dice) is None):
+            await self.bot.say('Error: Format must be NdN + NdN + NdN + ...')
             return
-        numRolls, limit = map(int, dice.split('d'))
-        results = (str(random.randint(1, limit + 1)) for x in range(numRolls))
-        await self.bot.longSay(', '.join(results))
+        diceList = re.split(util.rollSplitPattern, dice)
+        results = []
+        for d in diceList:
+            numRolls, limit = map(int, d.split('d'))
+            results.extend(str(random.randint(1, limit + 1)) for x in range(numRolls))
+        resultStrings = (str(x) for x in results)
+        await self.bot.longSay(', '.join(resultStrings))
+        await self.bot.say(f'Total is {sum(int(x) for x in results)}')
 
 def setup(bot):
     bot.add_cog(Commands(bot))
