@@ -63,5 +63,58 @@ class Commands():
         await self.bot.longSay(', '.join(resultStrings))
         await self.bot.say(f'Total is {sum(int(x) for x in results)}')
 
+    @commands.command(pass_context=True)
+    async def userinfo(self, context, *, username: str=None):
+        #Prints out info relating to the user that typed this message, or whoever was mentioned in this message
+        if username:
+            #Checks if there exists a user named 'username'
+            user = context.message.server.get_member_named(username)
+            if not user:
+                #Checks if they mentioned someone
+                user = context.message.server.get_member(username)
+            if not user:
+                #Converts the user to an id
+                user = context.message.server.get_member(('\\'+username)[3:-1])
+            if not user:
+                #Error Message
+                await self.bot.say(f'```!userinfo [user]\n\nReturns the '
+                                f'userinfo of the person who typed this, '
+                                f'or of the user they type.```')
+                return
+        else:
+            user = context.message.author
+
+        #Getting the status of the user
+        if user.game:
+            game = 'Playing: ' + user.game.name
+        else:
+            game = 'Status is: '+ (user.status.name).title()
+
+        author = (str(user) +
+                (' (Bot)' if user.bot else '') +
+                (('/' + str(user.nick)) if user.nick else ''))
+
+        data = discord.Embed(description=game, colour=user.colour)
+        data.set_author(name=author)
+        data.set_thumbnail(url=user.avatar_url)
+        data.add_field(name='User Id', value=user.id, inline=False)
+        daysSinceJoined = (user.joined_at.now()-user.joined_at).days
+        data.add_field(
+            name='Server Join Date',
+            value=(f'{user.joined_at.strftime("%B %d, %Y, at %H:%M:%S")}\n'
+                   f'({daysSinceJoined} days ago)'),
+                   inline=True)
+        daysSinceAccountCreated = (user.created_at.now()-user.created_at).days
+        data.add_field(
+            name='Account Creation Date',
+            value=(f'{user.created_at.strftime("%B %d, %Y, at %H:%M:%S")}\n'
+                   f'({daysSinceAccountCreated} days ago)'),
+                   inline=True)
+        roles = ', '.join(role.name for role in user.roles[1:])
+        if roles:
+            data.add_field(name='Roles', value=roles, inline=False)
+
+        await self.bot.say(embed=data)
+
 def setup(bot):
     bot.add_cog(Commands(bot))
