@@ -42,6 +42,9 @@ player = 0
 global musicQueue
 musicQueue = deque()
 
+global musicChannel
+musicChannel = deque()
+
 async def join(self, context):
     #Makes the bot join whichever channel the user that typed this command is in
     #Checks if the user is in a voice chanel
@@ -102,6 +105,8 @@ async def play(self, context, songURL):
     if songURL:
         global voiceClient
         global player
+        global musicQueue
+        global musicChannel
         #Checks if the bot is in a voice channel, if not, joins the channel
         if voiceClient == 0:
             await join(self, context)
@@ -116,13 +121,14 @@ async def play(self, context, songURL):
             #Creates the player
             queuePlayer = await voiceClient.create_ytdl_player(songURL)
             musicQueue.append(queuePlayer)
+            musicChannel.append(context.message.channel)
             await self.bot.say(f"Queued **{queuePlayer.title}**")
             return
 
         #Creates the player
         player = await voiceClient.create_ytdl_player(songURL,
                                                     after = lambda: playNext(self))
-
+        musicChannel.append(context.message.channel)
         await self.bot.say(f"Now playing: **{player.title}**")
 
         #Plays the song
@@ -135,6 +141,7 @@ async def play(self, context, songURL):
 def playNext(self):
     global player
     global musicQueue
+    global musicChannel
     global voiceClient
     #Resetting the player variable
     player = 0
@@ -154,6 +161,11 @@ def playNext(self):
 
         #Starts the next song
         player = newPlayerResult.result()
+
+        #Says that the next song has started in the channel it was queued in
+        sayNextSong = self.bot.send_message(musicChannel.popleft(), f"Now Playing **{player.title}**")
+        sayNextSongFuture = asyncio.run_coroutine_threadsafe(sayNextSong, self.bot.loop)
+
         player.start()
 
 class Music():
@@ -179,8 +191,6 @@ class Music():
         if (player != 0):
             player.stop()
             await self.bot.say("Song was skipped")
-            if (player != 0):
-                await self.bot.say(f"Now playing: **{player.title}**")
         else:
             #If nothing is playing
             await self.bot.say("Can't skip if I'm not playing")
@@ -227,4 +237,3 @@ class Music():
 
 def setup(bot):
     bot.add_cog(Music(bot))
-
